@@ -44,6 +44,7 @@ public class DefaultHttpServerRequest extends HttpServerRequest {
   private final HttpRequest request;
   //Cache this for performance
   private Map<String, String> params;
+  private Map<String, List<String>> multiParams;
   private Map<String, String> headers;
 
   DefaultHttpServerRequest(ServerConnection conn,
@@ -64,18 +65,25 @@ public class DefaultHttpServerRequest extends HttpServerRequest {
 
   public Map<String, String> params() {
     if (params == null) {
-      QueryStringDecoder queryStringDecoder = new QueryStringDecoder(uri);
-      Map<String, List<String>> prms = queryStringDecoder.getParameters();
-      if (prms.isEmpty()) {
+      multiParams();
+      if (multiParams.isEmpty()) {
         params = new HashMap<>();
       } else {
-        params = new HashMap<>(prms.size());
-        for (Map.Entry<String, List<String>> entry: prms.entrySet()) {
+        params = new HashMap<>(multiParams.size());
+        for (Map.Entry<String, List<String>> entry: multiParams.entrySet()) {
           params.put(entry.getKey(), entry.getValue().get(0));
         }
       }
     }
     return params;
+  }
+
+  public Map<String, List<String>> multiParams() {
+    if (multiParams == null) {
+      QueryStringDecoder queryStringDecoder = new QueryStringDecoder(uri);
+      multiParams = queryStringDecoder.getParameters();
+    }
+    return multiParams;
   }
 
   public void dataHandler(Handler<Buffer> dataHandler) {
